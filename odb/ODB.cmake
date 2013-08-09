@@ -25,10 +25,12 @@ function(odb_compile)
 
 	# Parse arguments passed
 	set(options GENERATE_QUERY GENERATE_SESSION GENERATE_SCHEMA)
-	set(oneValueParams DB SCHEMA_FORMAT STANDARD OUTPUT_DIRECTORY
-		SLOC_LIMIT HEADER_SUFFIX INLINE_SUFFIX SOURCE_SUFFIX
-		FILE_SUFFIX HEADER_PROLOGUE INLINE_PROLOGUE SOURCE_PROLOGUE
-		HEADER_EPILOGUE INLINE_EPILOGUE SOURCE_EPILOGUE)
+	set(oneValueParams DB SCHEMA_FORMAT SCHEMA_NAME TABLE_PREFIX
+		STANDARD OUTPUT_DIRECTORY SLOC_LIMIT
+		HEADER_SUFFIX INLINE_SUFFIX SOURCE_SUFFIX FILE_SUFFIX
+		HEADER_PROLOGUE INLINE_PROLOGUE SOURCE_PROLOGUE
+		HEADER_EPILOGUE INLINE_EPILOGUE SOURCE_EPILOGUE
+		PROFILE)
 	set(multiValueParams HEADER INCLUDE)
 
 	cmake_parse_arguments(PARAM "${options}"
@@ -75,16 +77,24 @@ function(odb_compile)
 		list(APPEND ODB_ARGS --schema-format ${PARAM_SCHEMA_FORMAT})
 	endif()
 
+	if(PARAM_SCHEMA_NAME)
+		list(APPEND ODB_ARGS --schema-name ${PARAM_SCHEMA_NAME})
+	endif()
+
+	if(PARAM_TABLE_PREFIX)
+		list(APPEND ODB_ARGS --table-prefix ${PARAM_TABLE_PREFIX})
+	endif()
+
 	if(PARAM_STANDARD)
 		list(APPEND ODB_ARGS --std ${PARAM_STANDARD})
-	endif()
+ 	endif()
 
 	if(PARAM_OUTPUT_DIRECTORY)
 		set(odb_output_directory ${PARAM_OUTPUT_DIRECTORY})
 	endif()
 
 	if(PARAM_SLOC_LIMIT)
-		list(APPEND ODB_ARGS "--sloc-limit {PARAM_SLOC_LIMIT}")
+		list(APPEND ODB_ARGS --sloc-limit {PARAM_SLOC_LIMIT})
 	endif()
 
 	if(PARAM_HEADER_SUFFIX)
@@ -122,27 +132,33 @@ function(odb_compile)
 		list(APPEND ODB_ARGS --cxx-epilogue-file ${PARAM_SOURCE_EPILOGUE})
 	endif()
 
+	if(PARAM_PROFILE)
+		list(APPEND ODB_ARGS --profile ${PARAM_PROFILE})
+	endif()
+
 	list(APPEND ODB_ARGS --output-dir ${odb_output_directory})
 	list(APPEND ODB_ARGS --hxx-suffix ${odb_header_suffix})
 	list(APPEND ODB_ARGS --ixx-suffix ${odb_inline_suffix})
 	list(APPEND ODB_ARGS --cxx-suffix ${odb_source_suffix})
 	list(APPEND ODB_ARGS --odb-file-suffix ${odb_file_suffix})
 
-	foreach(header ${PARAM_HEADER})
-		list(APPEND ODB_ARGS ${header})
-	endforeach()
-
 	foreach(dir ${PARAM_INCLUDE})
 		list(APPEND ODB_ARGS -I${dir})
 	endforeach()
 
-	string(REPLACE ${odb_header_suffix}
-		"${odb_file_suffix}${odb_source_suffix}"
-		_output ${PARAM_HEADER})
+	file(MAKE_DIRECTORY "${odb_output_directory}")
+
+	set(output_files)
+	foreach(input ${PARAM_HEADER})
+		get_filename_component(output ${input} NAME_WE)
+		set(output "${output}${odb_file_suffix}${odb_source_suffix}")
+
+		list(APPEND output_files "${odb_output_directory}/${output}")
+	endforeach()
 
 	add_custom_command(
-		OUTPUT ${_output}
-		COMMAND ${ODB_EXECUTABLE} ${ODB_ARGS}
+		OUTPUT ${output_files}
+		COMMAND ${ODB_EXECUTABLE} ${ODB_ARGS} ${PARAM_HEADER}
 		DEPENDS ${PARAM_HEADER}
 	)
 endfunction()
