@@ -1,10 +1,12 @@
-scaling-octo-batman
-===================
 
-Various scaling-octo-batmanic utilities ;)
+ODB.cmake - ODB support for CMake
 
-You are encouraged to let me know if you find any of these scripts
-useful in any way. You can reach me at <info@peredin.com>.
+Using it should be as simple as placing ODB.cmake somewhere CMake
+can find it and then
 
-Have fun!
+    include(ODB)
+
+in your CMakeLists.txt file.
+
+See ODB.cmake for more information.
 
